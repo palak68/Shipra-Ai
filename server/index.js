@@ -8,7 +8,8 @@ import cors from "cors"
 const app = express();
 
 
-cors({
+const privateCors =
+  cors({
 
     origin: [
       "http://localhost:5173"
@@ -18,6 +19,7 @@ cors({
 
   });
 
+  
   const publicCors =
   cors({
     origin: "*",

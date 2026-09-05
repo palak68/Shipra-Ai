@@ -3,6 +3,7 @@ import express from "express";
 import connectDB from "./Configs/ConnectDB.js";
 import cookieParser from "cookie-parser"
 import authRouter from "./Routes/auth.route.js"
+import userRouter from "./Routes/user.route.js"
 import cors from "cors"
 
 const app = express();
@@ -35,6 +36,7 @@ app.get("/", (req, res) => {
 
 
 app.use("/api/auth",privateCors , authRouter)
+app.use("/api/user",privateCors , userRouter)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {

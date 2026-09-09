@@ -1,11 +1,12 @@
-import "dotenv/config";
-import express from "express";
-import connectDB from "./Configs/ConnectDB.js";
-import cookieParser from "cookie-parser"
+import express from "express"
+import dotenv from "dotenv"
+import connectDB from "./Configs/ConnectDB.js"
 import authRouter from "./Routes/auth.route.js"
-import userRouter from "./Routes/user.route.js"
+import cookieParser from "cookie-parser"
+dotenv.config()
 import cors from "cors"
-
+import userRouter from "./Routes/user.route.js"
+import assistantRouter from "./Routes/assistant.route.js"
 const app = express();
 
 
@@ -37,7 +38,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth",privateCors , authRouter)
 app.use("/api/user",privateCors , userRouter)
-
+app.use("/api/assistant",publicCors , assistantRouter)
 const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

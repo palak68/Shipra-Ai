@@ -1,59 +1,170 @@
-import { generateGeminiResponse } from "../Configs/gemini.js"
-import User from "../Models/user.model.js"
+import { generateGeminiResponse } from "../Configs/gemini.js";
+import User from "../Models/user.model.js";
 
+
+// ==========================================
+// GET ASSISTANT CONFIG
+// ==========================================
 
 export const getAssistantConfig = async (req, res) => {
+
     try {
-        const { userId } = req.params
 
-        const user = await User.findById(userId).select("-geminiApiKey")
-        if (!user) {
-            return res.status(404).json({ message: "failed to get user" })
-        }
-
-        return res.status(200).json({ message: "Assistant Config data ", user })
-
-    } catch (error) {
-        return res.status(500).json({ message: `Assistant Config failed ${error}` })
-    }
-}
-
-
-export const askAssistant = async (req, res) => {
-    try {
-        const { message, userId } = req.body
-
-        if (!message || !userId) {
-            return res.status(400).json({ message: "Message and UserId are required" })
-        }
+        const { userId } = req.params;
 
         const user = await User.findById(userId)
+            .select("-geminiApiKey");
 
         if (!user) {
-            return res.status(404).json({ message: "User is not found" })
+
+            return res.status(404).json({
+                message: "failed to get user"
+            });
+
         }
+
+        return res.status(200).json({
+            message: "Assistant Config data ",
+            user
+        });
+
+    } catch (error) {
+
+        console.log(
+            "Assistant Config Error:",
+            error
+        );
+
+        return res.status(500).json({
+            message: `Assistant Config failed ${error}`
+        });
+
+    }
+
+};
+
+
+// ==========================================
+// ASK ASSISTANT
+// ==========================================
+
+export const askAssistant = async (req, res) => {
+
+    try {
+
+        const { message, userId, currentPath } = req.body;
+
+
+        // ==================================
+        // VALIDATION
+        // ==================================
+
+        if (!message || !userId) {
+
+            return res.status(400).json({
+                message:
+                    "Message and UserId are required"
+            });
+
+        }
+
+
+        // ==================================
+        // FIND USER
+        // ==================================
+
+        const user =
+            await User.findById(userId);
+
+
+        if (!user) {
+
+            return res.status(404).json({
+                message:
+                    "User is not found"
+            });
+
+        }
+
+
+        // ==================================
+        // GEMINI API KEY
+        // ==================================
+
         if (!user.geminiApiKey) {
-            return res.status(400).json({ message: "gemini apikey is not added" })
+
+            return res.status(400).json({
+                message:
+                    "gemini apikey is not added"
+            });
+
         }
 
-        if (user.plan === "free"
-            && user.totalMessages >= user.requestLimit) {
-            return res.status(400).json({ message: "Free limit reached" })
+
+        // ==================================
+        // FREE PLAN LIMIT
+        // ==================================
+
+        if (
+            user.plan === "free" &&
+            user.totalMessages >= user.requestLimit
+        ) {
+
+            return res.status(400).json({
+                message:
+                    "Free limit reached"
+            });
+
         }
 
-        if (user.plan === "pro" && new Date(user.proExpiresAt) < new Date()) {
-            user.plan === "free"
 
-            await user.save()
+        // ==================================
+        // PRO PLAN EXPIRY
+        // ==================================
 
-            return res.status(400).json({ message: "Pro plan expired" })
+        if (
+            user.plan === "pro" &&
+            user.proExpiresAt &&
+            new Date(user.proExpiresAt) < new Date()
+        ) {
+
+            user.plan = "free";
+
+            await user.save();
+
+            return res.status(400).json({
+                message:
+                    "Pro plan expired"
+            });
+
         }
 
-        const cleanMessage = message.toLowerCase()
+
+        // ==================================
+        // CLEAN MESSAGE
+        // ==================================
+
+        const cleanMessage =
+            message.toLowerCase().trim();
+
+
+        console.log(
+            "User Message:",
+            cleanMessage
+        );
+
+
+        // ==================================
+        // NAVIGATION
+        // ==================================
 
         if (user.enableNavigation) {
 
-            // Navigation Commands
+
+            // --------------------------------
+            // Navigation trigger words
+            // --------------------------------
+
             const navigationWords = [
 
                 "open",
@@ -62,37 +173,86 @@ export const askAssistant = async (req, res) => {
                 "show",
                 "navigate",
                 "take me",
+                "visit",
+                "view",
+                "access",
+                "billing",
+                "dashboard",
+                "profile",
+                "settings",
+                "home",
+                "about",
+                "contact",
+                "pricing",
+                "login",
+                "register",
+                "signup",
+                "sign up",
+                "logout",
+                "log out"
 
             ];
 
+
+            // --------------------------------
             // Check navigation intent
+            // --------------------------------
+
             const wantsNavigation =
                 navigationWords.some((word) =>
-
-                    cleanMessage.startsWith(word)
+                    cleanMessage.includes(word)
                 );
 
-            // User wants navigation
+
+            console.log(
+                "Wants Navigation:",
+                wantsNavigation
+            );
+
+
+            // --------------------------------
+            // Find matching page
+            // --------------------------------
+
             if (wantsNavigation) {
 
-                // Find matching page
                 const matchedPage =
-                    user.pages.find((page) =>
+                    user.pages?.find((page) => {
 
-                        page.keywords.some((keyword) =>
+                        if (!page.keywords) {
+                            return false;
+                        }
 
-                            cleanMessage.includes(
-                                keyword.toLowerCase()
-                            )
-                        )
-                    );
+                        return page.keywords.some(
+                            (keyword) =>
+                                cleanMessage.includes(
+                                    keyword.toLowerCase().trim()
+                                )
+                        );
 
-                // Page found
+                    });
+
+
+                console.log(
+                    "Matched Page:",
+                    matchedPage
+                );
+
+
+                // --------------------------------
+                // PAGE FOUND
+                // --------------------------------
+
                 if (matchedPage) {
 
-                    // Already open
+
+                    // ----------------------------
+                    // Already on page
+                    // ----------------------------
+
                     if (
-                        req.body.currentPath ===
+                        currentPath &&
+                        currentPath ===
                         matchedPage.path
                     ) {
 
@@ -100,30 +260,58 @@ export const askAssistant = async (req, res) => {
 
                             success: true,
 
+                            action: "none",
+
                             response:
-                                `${matchedPage.name} already open`
+                                `${matchedPage.name} is already open.`
 
                         });
+
                     }
 
+
+                    // ----------------------------
                     // Navigate
+                    // ----------------------------
+
+                    console.log(
+                        "Navigating to:",
+                        matchedPage.name
+                    );
+
+                    console.log(
+                        "Navigation Path:",
+                        matchedPage.path
+                    );
+
+
                     return res.json({
 
                         success: true,
 
                         action: "navigate",
 
-                        path: matchedPage.path,
+                        path:
+                            matchedPage.path,
 
-                        response:
+                        aiResponse:
                             `Opening ${matchedPage.name}`,
 
+                        response:
+                            `Opening ${matchedPage.name}`
+
                     });
+
                 }
+
             }
+
         }
 
 
+        // ==========================================
+        // NORMAL GEMINI AI RESPONSE
+        // ==========================================
 
         const prompt = `
 
@@ -147,39 +335,73 @@ Rules:
 - Keep replies under 15 words
 - Give fast direct responses
 - Talk naturally
-- Behave like smart voice assistant
+- Behave like a smart voice assistant
 - Avoid long explanations
 - Keep responses short for quick voice playback
+
 
 User Question:
 ${message}
 
 `;
 
-     const aiResponse = await generateGeminiResponse({prompt ,apikey: user.geminiApiKey , user })
 
-    if(user.plan === "free"){
-        user.totalMessages += 1
+        const aiResponse =
+            await generateGeminiResponse({
 
-     await user.save()
+                prompt,
 
-    }
-    return  res.json({
-                success: true,
-                aiResponse
+                apikey:
+                    user.geminiApiKey,
+
+                user
+
             });
+
+
+        // ==========================================
+        // INCREASE FREE PLAN MESSAGE COUNT
+        // ==========================================
+
+        if (user.plan === "free") {
+
+            user.totalMessages += 1;
+
+            await user.save();
+
+        }
+
+
+        // ==========================================
+        // NORMAL RESPONSE
+        // ==========================================
+
+        return res.json({
+
+            success: true,
+
+            aiResponse
+
+        });
+
 
     } catch (error) {
 
-        console.log(error)
+        console.log(
+            "Ask Assistant Error:",
+            error
+        );
 
-        return  res.status(500).json({
-                success: false,
-                message:
-                    "Assistant AI Error",
-            });
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                "Assistant AI Error"
+
+        });
 
     }
-}
 
-
+};

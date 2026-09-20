@@ -7,40 +7,34 @@ import User from "../Models/user.model.js";
 // ==========================================
 
 export const getAssistantConfig = async (req, res) => {
-
     try {
 
         const { userId } = req.params;
 
-        const user = await User.findById(userId)
-            .select("-geminiApiKey");
+        const user = await User.findById(userId).select("-geminiApiKey");
 
         if (!user) {
-
             return res.status(404).json({
-                message: "failed to get user"
+                success: false,
+                message: "Failed to get user"
             });
-
         }
 
         return res.status(200).json({
-            message: "Assistant Config data ",
+            success: true,
+            message: "Assistant Config data",
             user
         });
 
     } catch (error) {
 
-        console.log(
-            "Assistant Config Error:",
-            error
-        );
+        console.log("Assistant Config Error:", error);
 
         return res.status(500).json({
-            message: `Assistant Config failed ${error}`
+            success: false,
+            message: `Assistant Config failed: ${error.message}`
         });
-
     }
-
 };
 
 
@@ -52,58 +46,82 @@ export const askAssistant = async (req, res) => {
 
     try {
 
-        const { message, userId, currentPath } = req.body;
+        // ==========================================
+        // GET DATA FROM FRONTEND
+        // ==========================================
+
+        const {
+            message,
+            userId,
+            currentPath
+        } = req.body;
 
 
-        // ==================================
+        console.log("=================================");
+        console.log("ASK ASSISTANT CONTROLLER HIT");
+        console.log("BODY:", req.body);
+        console.log("=================================");
+
+
+        // ==========================================
         // VALIDATION
-        // ==================================
+        // ==========================================
 
         if (!message || !userId) {
 
             return res.status(400).json({
-                message:
-                    "Message and UserId are required"
+                success: false,
+                message: "Message and UserId are required"
             });
-
         }
 
 
-        // ==================================
-        // FIND USER
-        // ==================================
+        // ==========================================
+        // IMPORTANT
+        // cleanMessage MUST BE HERE
+        // BEFORE USING IT ANYWHERE
+        // ==========================================
 
-        const user =
-            await User.findById(userId);
+        const cleanMessage = message
+            .toLowerCase()
+            .trim();
+
+
+        console.log("CLEAN MESSAGE:", cleanMessage);
+
+
+        // ==========================================
+        // FIND USER
+        // ==========================================
+
+        const user = await User.findById(userId);
 
 
         if (!user) {
 
             return res.status(404).json({
-                message:
-                    "User is not found"
+                success: false,
+                message: "User is not found"
             });
-
         }
 
 
-        // ==================================
-        // GEMINI API KEY
-        // ==================================
+        // ==========================================
+        // GEMINI API KEY CHECK
+        // ==========================================
 
         if (!user.geminiApiKey) {
 
             return res.status(400).json({
-                message:
-                    "gemini apikey is not added"
+                success: false,
+                message: "Gemini API key is not added"
             });
-
         }
 
 
-        // ==================================
+        // ==========================================
         // FREE PLAN LIMIT
-        // ==================================
+        // ==========================================
 
         if (
             user.plan === "free" &&
@@ -111,16 +129,15 @@ export const askAssistant = async (req, res) => {
         ) {
 
             return res.status(400).json({
-                message:
-                    "Free limit reached"
+                success: false,
+                message: "Free limit reached"
             });
-
         }
 
 
-        // ==================================
+        // ==========================================
         // PRO PLAN EXPIRY
-        // ==================================
+        // ==========================================
 
         if (
             user.plan === "pro" &&
@@ -133,176 +150,99 @@ export const askAssistant = async (req, res) => {
             await user.save();
 
             return res.status(400).json({
-                message:
-                    "Pro plan expired"
+                success: false,
+                message: "Pro plan expired"
             });
-
         }
 
 
-        // ==================================
-        // CLEAN MESSAGE
-        // ==================================
+        // ==========================================
+        // WEBSITE NAVIGATION
+        // ==========================================
 
-        const cleanMessage =
-            message.toLowerCase().trim();
+        if (
+            user.enableNavigation === true &&
+            user.pages &&
+            user.pages.length > 0
+        ) {
 
-
-        console.log(
-            "User Message:",
-            cleanMessage
-        );
-
-
-        // ==================================
-        // NAVIGATION
-        // ==================================
-
-        if (user.enableNavigation) {
+            console.log("Navigation Enabled:", user.enableNavigation);
+            console.log("User Pages:", user.pages);
 
 
-            // --------------------------------
-            // Navigation trigger words
-            // --------------------------------
+            // ==========================================
+            // FIND MATCHING PAGE
+            // ==========================================
 
-            const navigationWords = [
+            const matchedPage = user.pages.find((page) => {
 
-                "open",
-                "go",
-                "start",
-                "show",
-                "navigate",
-                "take me",
-                "visit",
-                "view",
-                "access",
-                "billing",
-                "dashboard",
-                "profile",
-                "settings",
-                "home",
-                "about",
-                "contact",
-                "pricing",
-                "login",
-                "register",
-                "signup",
-                "sign up",
-                "logout",
-                "log out"
-
-            ];
+                if (
+                    !page.keywords ||
+                    page.keywords.length === 0
+                ) {
+                    return false;
+                }
 
 
-            // --------------------------------
-            // Check navigation intent
-            // --------------------------------
+                return page.keywords.some((keyword) => {
 
-            const wantsNavigation =
-                navigationWords.some((word) =>
-                    cleanMessage.includes(word)
-                );
-
-
-            console.log(
-                "Wants Navigation:",
-                wantsNavigation
-            );
-
-
-            // --------------------------------
-            // Find matching page
-            // --------------------------------
-
-            if (wantsNavigation) {
-
-                const matchedPage =
-                    user.pages?.find((page) => {
-
-                        if (!page.keywords) {
-                            return false;
-                        }
-
-                        return page.keywords.some(
-                            (keyword) =>
-                                cleanMessage.includes(
-                                    keyword.toLowerCase().trim()
-                                )
-                        );
-
-                    });
-
-
-                console.log(
-                    "Matched Page:",
-                    matchedPage
-                );
-
-
-                // --------------------------------
-                // PAGE FOUND
-                // --------------------------------
-
-                if (matchedPage) {
-
-
-                    // ----------------------------
-                    // Already on page
-                    // ----------------------------
-
-                    if (
-                        currentPath &&
-                        currentPath ===
-                        matchedPage.path
-                    ) {
-
-                        return res.json({
-
-                            success: true,
-
-                            action: "none",
-
-                            response:
-                                `${matchedPage.name} is already open.`
-
-                        });
-
+                    if (!keyword) {
+                        return false;
                     }
 
-
-                    // ----------------------------
-                    // Navigate
-                    // ----------------------------
-
-                    console.log(
-                        "Navigating to:",
-                        matchedPage.name
+                    return cleanMessage.includes(
+                        keyword.toLowerCase().trim()
                     );
 
-                    console.log(
-                        "Navigation Path:",
-                        matchedPage.path
-                    );
+                });
 
+            });
+
+
+            console.log("MATCHED PAGE:", matchedPage);
+
+
+            // ==========================================
+            // PAGE FOUND
+            // ==========================================
+
+            if (matchedPage) {
+
+                console.log("MATCHED PAGE NAME:", matchedPage.name);
+                console.log("MATCHED PATH:", matchedPage.path);
+                console.log("CURRENT PATH:", currentPath);
+
+
+                // ==========================================
+                // ALREADY ON SAME PAGE
+                // ==========================================
+
+                if (
+                    currentPath &&
+                    currentPath === matchedPage.path
+                ) {
 
                     return res.json({
-
                         success: true,
-
-                        action: "navigate",
-
-                        path:
-                            matchedPage.path,
-
-                        aiResponse:
-                            `Opening ${matchedPage.name}`,
-
-                        response:
-                            `Opening ${matchedPage.name}`
-
+                        action: "none",
+                        path: matchedPage.path,
+                        response: `${matchedPage.name} is already open`,
+                        aiResponse: `${matchedPage.name} is already open`
                     });
-
                 }
+
+
+                // ==========================================
+                // NAVIGATE TO PAGE
+                // ==========================================
+
+                return res.json({
+                    success: true,
+                    action: "navigate",
+                    path: matchedPage.path,
+                    response: `Opening ${matchedPage.name}`,
+                    aiResponse: `Opening ${matchedPage.name}`
+                });
 
             }
 
@@ -310,8 +250,12 @@ export const askAssistant = async (req, res) => {
 
 
         // ==========================================
-        // NORMAL GEMINI AI RESPONSE
+        // GEMINI AI FALLBACK
         // ==========================================
+
+        console.log("No navigation page matched.");
+        console.log("Sending request to Gemini...");
+
 
         const prompt = `
 
@@ -331,14 +275,16 @@ ${user.tone}
 
 
 Rules:
-
+Reply in the SAME language as the user's message.
+- If user speaks Hindi, reply in Hindi.
+- If user speaks Hinglish, reply in Hinglish.
+- If user speaks English, reply in English.
 - Keep replies under 15 words
 - Give fast direct responses
 - Talk naturally
-- Behave like a smart voice assistant
+- Behave like smart voice assistant
 - Avoid long explanations
 - Keep responses short for quick voice playback
-
 
 User Question:
 ${message}
@@ -346,21 +292,15 @@ ${message}
 `;
 
 
-        const aiResponse =
-            await generateGeminiResponse({
-
-                prompt,
-
-                apikey:
-                    user.geminiApiKey,
-
-                user
-
-            });
+        const aiResponse = await generateGeminiResponse({
+            prompt,
+            apikey: user.geminiApiKey,
+            user
+        });
 
 
         // ==========================================
-        // INCREASE FREE PLAN MESSAGE COUNT
+        // INCREMENT FREE USER MESSAGE COUNT
         // ==========================================
 
         if (user.plan === "free") {
@@ -368,40 +308,32 @@ ${message}
             user.totalMessages += 1;
 
             await user.save();
-
         }
 
 
         // ==========================================
-        // NORMAL RESPONSE
+        // GEMINI RESPONSE
         // ==========================================
 
         return res.json({
-
             success: true,
-
+            action: "none",
+            response: aiResponse,
             aiResponse
-
         });
 
 
     } catch (error) {
 
-        console.log(
-            "Ask Assistant Error:",
-            error
-        );
+        console.log("=================================");
+        console.log("Assistant AI Error:", error);
+        console.log("=================================");
 
 
         return res.status(500).json({
-
             success: false,
-
-            message:
-                "Assistant AI Error"
-
+            message: "Assistant AI Error",
+            error: error.message
         });
-
     }
-
 };

@@ -174,7 +174,7 @@
 
 
             const res = await fetch(
-                `http://localhost:8000/api/assistant/config/${userId}`
+                `http:// https://shipra-aiserver.onrender.com/api/assistant/config/${userId}`
             );
 
 
@@ -453,7 +453,7 @@
 
 
                     const res = await fetch(
-                        "http://localhost:8000/api/assistant/ask",
+                        "http:// https://shipra-aiserver.onrender.com/api/assistant/ask",
                         {
                             method: "POST",
 

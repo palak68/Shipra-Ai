@@ -7,6 +7,7 @@ dotenv.config()
 import cors from "cors"
 import userRouter from "./Routes/user.route.js"
 import assistantRouter from "./Routes/assistant.route.js"
+import billingRouter from "./Routes/billing.route.js"
 const app = express();
 
 
@@ -39,6 +40,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth",privateCors , authRouter)
 app.use("/api/user",privateCors , userRouter)
 app.use("/api/assistant",publicCors , assistantRouter)
+app.use("/api/billing",privateCors , billingRouter)
 const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

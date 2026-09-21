@@ -354,13 +354,9 @@ MONGODB_URL=your_mongodb_connection_string
 
 JWT_SECRET=your_jwt_secret
 
-GEMINI_API_KEY=your_gemini_api_key
-
 RAZORPAY_KEY_ID=your_razorpay_key_id
 
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-
-CLIENT_URL=http://localhost:5173
 ```
 
 ---
@@ -371,13 +367,10 @@ CLIENT_URL=http://localhost:5173
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 
 VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
-
-VITE_SERVER_URL=http://localhost:8000
 ```
 
 > ⚠️ Never commit your `.env` files to GitHub.
-
----
+```
 
 # 🔌 Embed the Assistant on Any Website
 
@@ -406,15 +399,18 @@ The floating assistant button will appear on your website and visitors can start
 
 ### 🏠 Landing Page with Voice Assistant
 
-<img width="100%" alt="Landing Page" src="./screenshots/home.png" />
+<img width="1366" height="768" alt="Screenshot (455)" src="https://github.com/user-attachments/assets/ab9f1b66-fa41-4577-bd66-27b4100fdaa2" />
+
 
 ### 📊 Builder Dashboard
 
-<img width="100%" alt="Builder Dashboard" src="./screenshots/builder.png" />
+<img width="1366" height="768" alt="Screenshot (456)" src="https://github.com/user-attachments/assets/5adfd209-d159-42a1-bcc6-9841379a1321" />
+
 
 ### 💳 Billing & Plans
 
-<img width="100%" alt="Billing and Plans" src="./screenshots/billing.png" />
+<img width="1366" height="768" alt="Screenshot (458)" src="https://github.com/user-attachments/assets/95b4556b-0353-47a7-bce9-b40d9eb7970f" />
+>
 
 ---
 

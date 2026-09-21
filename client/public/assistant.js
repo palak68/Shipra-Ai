@@ -96,7 +96,7 @@
                 <button class="shifra-mic">
 
                     <img
-                        src="http://https://shipra-aiclient.onrender.com/mic.svg"
+                        src="https://shipra-aiclient.onrender.com/mic.svg"
                         alt="mic"
                         class="shifra-mic-icon"
                     />
@@ -122,7 +122,7 @@
 
     button.innerHTML = `
         <img
-            src="http://https://shipra-aiclient.onrender.com/logo.png"
+            src="https://shipra-aiclient.onrender.com/logo.png"
             alt="logo"
         />
     `;
@@ -174,7 +174,7 @@
 
 
             const res = await fetch(
-                `http:// https://shipra-aiserver.onrender.com/api/assistant/config/${userId}`
+                `https://shipra-aiserver.onrender.com/api/assistant/config/${userId}`
             );
 
 
@@ -453,7 +453,7 @@
 
 
                     const res = await fetch(
-                        "http:// https://shipra-aiserver.onrender.com/api/assistant/ask",
+                        "https://shipra-aiserver.onrender.com/api/assistant/ask",
                         {
                             method: "POST",
 

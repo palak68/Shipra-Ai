@@ -9,7 +9,7 @@ import Navbar from './Components/Navbar'
 import Builder from './pages/Builder'
 import Billing from './pages/Billing'
 import { Toaster } from "react-hot-toast"
-export const ServerUrl = " https://shipra-aiserver.onrender.com"
+export const ServerUrl = "https://shipra-aiserver.onrender.com"
 export const CLIENT_URL = "https://shipra-aiclient.onrender.com"
 function App() {
   const [user, setUser] = useState(null)
